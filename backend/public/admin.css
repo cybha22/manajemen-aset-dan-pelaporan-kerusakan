@@ -1,0 +1,232 @@
+/* =======================
+   ADMIN DASHBOARD CSS EXTENSION
+   ======================= */
+
+/* Navigation Sidebar */
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 50px;
+    flex-grow: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.nav-item i {
+    font-size: 1.5rem;
+}
+
+.nav-item:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+    background: rgba(0, 191, 255, 0.15);
+    color: var(--neon-blue);
+    position: relative;
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    width: 4px;
+    background: var(--neon-blue);
+    border-radius: 0 4px 4px 0;
+}
+
+/* User Profile Nav */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: 15px;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    color: var(--neon-purple);
+    font-weight: 500;
+}
+
+.admin-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 30px;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    width: 100%;
+}
+
+.stat-card {
+    padding: 30px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(10, 15, 26, 0.6);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+}
+
+.stat-icon.purple {
+    background: rgba(138, 43, 226, 0.15);
+    color: var(--neon-purple);
+}
+
+.stat-icon.green {
+    background: rgba(0, 255, 127, 0.15);
+    color: var(--neon-green);
+}
+
+.stat-icon.red {
+    background: rgba(255, 99, 71, 0.15);
+    color: #FF6347;
+}
+
+/* Tomato/Neon Red */
+
+.stat-details h3 {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+}
+
+.trend {
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.trend.up {
+    color: var(--neon-green);
+    background: rgba(0, 255, 127, 0.1);
+}
+
+.trend.down {
+    color: #FF6347;
+    background: rgba(255, 99, 71, 0.1);
+}
+
+/* Charts Area */
+.charts-row {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+}
+
+.chart-container {
+    padding: 30px;
+    border-radius: 24px;
+    background: rgba(10, 15, 26, 0.6);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container.width-2 {
+    flex: 2;
+}
+
+.chart-container.width-1 {
+    flex: 1;
+}
+
+.panel-header-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.panel-header-simple h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.icon-btn:hover {
+    color: #FFF;
+}
+
+.canvas-wrapper {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+.pie-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 1200px) {
+    .charts-row {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 992px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}

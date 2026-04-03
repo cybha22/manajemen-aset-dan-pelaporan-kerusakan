@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART / AsetLink - Campus Asset Maintenance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/logo2.svg">
+    <link rel="apple-touch-icon" href="/logo2.svg">
+    <meta name="theme-color" content="#0a0f1a">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="ambient-bg">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+        <div class="blob b3"></div>
+        <div class="blob b4"></div>
+        <div class="noise"></div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div class="login-screen" id="loginScreen" style="display:none;">
+        <div class="login-wrapper">
+            <div class="login-brand">
+                <div class="login-brand-row">
+                    <div class="logo-icon large"><img src="logo2.svg" alt="AsetLink Logo"></div>
+                    <div class="login-brand-text">
+                        <h1>AsetLink</h1>
+                        <span class="logo-sub">Modul Otentikasi Admin</span>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card login-card">
+                <h3>Masuk ke Panel Admin</h3>
+                <p class="dim">Hanya untuk staf Unit Sarana dan Prasarana ITATS.</p>
+                <form id="loginForm">
+                    <div class="form-field icon-field">
+                        <i class="ph ph-user"></i>
+                        <div><label>Username</label><input type="text" id="loginUser" placeholder="admin" required>
+                        </div>
+                    </div>
+                    <div class="form-field icon-field">
+                        <i class="ph ph-lock-key"></i>
+                        <div><label>Password</label><input type="password" id="loginPass" placeholder="********"
+                                required></div>
+                    </div>
+                    <div class="login-error" id="loginError" style="display:none;">Username atau password salah.</div>
+                    <button type="submit" class="btn primary full-w">
+                        <span>Masuk</span><i class="ph ph-sign-in"></i>
+                    </button>
+                </form>
+                <button class="btn ghost full-w mt" id="backToPublic">
+                    <i class="ph ph-arrow-left"></i><span>Kembali ke Menu Publik</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div class="app" id="appMain">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="logo-row">
+                    <div class="logo-icon"><img src="logo2.svg" alt="AsetLink Logo"></div>
+                    <div>
+                        <div class="logo-name">AsetLink</div>
+                        <div class="logo-sub">SMART System</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-label">Menu Publik</div>
+                <button class="nav-link active" data-page="report">
+                    <i class="ph ph-pencil-line"></i><span>Buat Laporan</span>
+                </button>
+                <button class="nav-link" data-page="track">
+                    <i class="ph ph-binoculars"></i><span>Lacak Tiket</span>
+                </button>
+
+                <div class="nav-label" id="adminLabel" style="display:none;">Panel Admin</div>
+                <button class="nav-link admin-only" data-page="dashboard" style="display:none;">
+                    <i class="ph ph-chart-pie-slice"></i><span>Dasbor Analitik</span>
+                </button>
+                <button class="nav-link admin-only" data-page="tickets" style="display:none;">
+                    <i class="ph ph-kanban"></i><span>Manajemen Tiket</span>
+                </button>
+                <button class="nav-link admin-only" data-page="master" style="display:none;">
+                    <i class="ph ph-database"></i><span>Master Data Aset</span>
+                </button>
+                <button class="nav-link admin-only" data-page="qrcode" style="display:none;">
+                    <i class="ph ph-qr-code"></i><span>QR Code Ruangan</span>
+                </button>
+                <button class="nav-link admin-only" data-page="telegram" style="display:none;">
+                    <i class="ph ph-telegram-logo"></i><span>Info Bot Teknisi</span>
+                </button>
+
+                <div class="nav-divider" id="navDividerAdmin" style="display:none;"></div>
+                <button class="nav-link" id="logoutBtn" data-page="logout" style="display:none;">
+                    <i class="ph ph-sign-out"></i><span>Logout</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="system-badge">
+                    <span class="dot-pulse"></span> System Online
+                </div>
+                <div class="sidebar-copy">&copy; 2026 Sarpras ITATS</div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <button class="hamburger" id="menuToggle"><i class="ph ph-list"></i></button>
+                <div class="topbar-title" id="topbarTitle">
+                    <h2>Buat Laporan Kerusakan</h2>
+                    <p>Isi data secara lengkap untuk memproses tiket baru.</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-user" id="topbarUser">
+                        <div class="user-info">
+                            <span class="u-name" id="uName">Mahasiswa</span>
+                            <span class="u-role" id="uRole">Pengguna Publik</span>
+                        </div>
+                        <img src="image.png" class="u-avatar" id="uAvatar" alt="avatar">
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+
+                <!-- ========== PAGE: REPORT ========== -->
+                <section class="page active" id="page-report">
+                    <div class="card-grid single">
+                        <div class="glass-card large-card">
+                            <div class="card-head">
+                                <div>
+                                    <h3>Form Pelaporan Kerusakan</h3>
+                                    <p class="dim">Lengkapi semua kolom. Tiket akan digenerate otomatis.</p>
+                                </div>
+                                <div class="badge purple" id="ticketBadge">ID: #TK-00000</div>
+                            </div>
+                            <form id="reportForm">
+                                <div class="form-row">
+                                    <div class="form-field icon-field">
+                                        <i class="ph ph-user"></i>
+                                        <div><label>Nama Pelapor</label><input type="text" id="reporterName"
+                                                placeholder="Masukkan nama Anda" required></div>
+                                    </div>
+                                    <div class="form-field icon-field">
+                                        <i class="ph ph-whatsapp-logo"></i>
+                                        <div><label>No. WhatsApp</label><input type="text" id="reporterPhone"
+                                                placeholder="08xx..." required></div>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-field icon-field">
+                                        <i class="ph ph-buildings"></i>
+                                        <div>
+                                            <label>Gedung</label>
+                                            <select id="reportGedung" required>
+                                                <option value="" disabled selected hidden>-- Pilih Gedung --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-field icon-field">
+                                        <i class="ph ph-door"></i>
+                                        <div>
+                                            <label>Ruangan</label>
+                                            <input type="text" id="reportRuangan" placeholder="Contoh: 103" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-field icon-field">
+                                    <i class="ph ph-monitor"></i>
+                                    <div>
+                                        <label>Kategori Aset</label>
+                                        <select id="assetType" required>
+                                            <option value="" disabled selected hidden>Pilih jenis aset...</option>
+                                            <option>Air Conditioner (AC)</option>
+                                            <option>Proyektor &amp; Layar</option>
+                                            <option>Furnitur (Kursi / Meja)</option>
+                                            <option>Kelistrikan (Lampu / Stop Kontak)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <label class="standalone-label">Bukti Foto Kerusakan</label>
+                                    <div class="dropzone" id="dropzone">
+                                        <div class="dz-inner" id="dzInner">
+                                            <div class="dz-icon"><i class="ph ph-cloud-arrow-up"></i></div>
+                                            <p><span class="hl">Klik untuk unggah</span> atau seret foto ke sini</p>
+                                            <small>JPG / PNG, Maks 5MB</small>
+                                        </div>
+                                        <input type="file" id="fileInput" accept="image/*" hidden>
+                                    </div>
+                                </div>
+                                <div class="form-field icon-field top-align">
+                                    <i class="ph ph-note-pencil"></i>
+                                    <div>
+                                        <label>Deskripsi Kerusakan</label>
+                                        <textarea id="reportDesc" rows="3"
+                                            placeholder="Contoh: AC menyala tapi tidak dingin, berbunyi bising..."
+                                            required></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="reset" class="btn ghost"><i class="ph ph-arrow-counter-clockwise"></i>
+                                        Reset</button>
+                                    <button type="submit" class="btn primary" id="submitBtn">
+                                        <span>Kirim Laporan</span><i class="ph ph-paper-plane-right"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: TRACK ========== -->
+                <section class="page" id="page-track">
+                    <div class="card-grid single">
+                        <div class="glass-card large-card">
+                            <div class="card-head">
+                                <div>
+                                    <h3>Lacak Status Tiket</h3>
+                                    <p class="dim">Masukkan ID Tiket untuk melihat progres perbaikan.</p>
+                                </div>
+                            </div>
+                            <div class="search-bar">
+                                <i class="ph ph-magnifying-glass"></i>
+                                <input type="text" id="trackInput" placeholder="Contoh: TK-83921">
+                                <button class="btn primary sm" id="trackBtn">Lacak</button>
+                            </div>
+                            <div class="track-result" id="trackResult" style="display:none;">
+                                <div class="track-info-row">
+                                    <div class="track-info-item"><span class="dim">ID Tiket</span><strong
+                                            id="trId">TK-83921</strong></div>
+                                    <div class="track-info-item"><span class="dim">Lokasi</span><strong
+                                            id="trLoc">Gedung A / R.103</strong></div>
+                                    <div class="track-info-item"><span class="dim">Aset</span><strong id="trAsset">Air
+                                            Conditioner</strong></div>
+                                    <div class="track-info-item"><span class="dim">Tanggal Lapor</span><strong
+                                            id="trDate">28 Feb 2026</strong></div>
+                                </div>
+                                <div class="timeline" id="trackTimeline"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: DASHBOARD ========== -->
+                <section class="page" id="page-dashboard">
+                    <div class="stat-row">
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon purple"><i class="ph ph-ticket"></i></div>
+                            <div><span class="dim">Total Tiket</span>
+                                <h2>0</h2>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon green"><i class="ph ph-check-circle"></i></div>
+                            <div><span class="dim">Selesai</span>
+                                <h2>0</h2>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon blue"><i class="ph ph-wrench"></i></div>
+                            <div><span class="dim">Sedang Dikerjakan</span>
+                                <h2>0</h2>
+                            </div>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <div class="stat-icon red"><i class="ph ph-warning-circle"></i></div>
+                            <div><span class="dim">Baru / Pending</span>
+                                <h2>0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="glass-card chart-card flex2">
+                            <div class="card-head">
+                                <h3>Tren Pelaporan Mingguan</h3>
+                            </div>
+                            <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
+                        </div>
+                        <div class="glass-card chart-card flex1">
+                            <div class="card-head">
+                                <h3>Distribusi Kategori</h3>
+                            </div>
+                            <div class="chart-wrap donut-wrap"><canvas id="chartDonut"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="glass-card chart-card flex1">
+                            <div class="card-head">
+                                <h3>Performa per Gedung</h3>
+                            </div>
+                            <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+                        </div>
+                        <div class="glass-card chart-card flex1">
+                            <div class="card-head">
+                                <h3>Rata-rata Waktu Respon (Jam)</h3>
+                            </div>
+                            <div class="chart-wrap"><canvas id="chartBarH"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: TICKETS (Kanban) ========== -->
+                <section class="page" id="page-tickets">
+                    <div class="kanban-board">
+                        <div class="kanban-col">
+                            <div class="kanban-header"><span class="k-dot red-dot"></span> Baru Masuk <span
+                                    class="k-count">0</span></div>
+                            <div class="kanban-cards"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-header"><span class="k-dot blue-dot"></span> Sedang Dikerjakan <span
+                                    class="k-count">0</span></div>
+                            <div class="kanban-cards"></div>
+                        </div>
+                        <div class="kanban-col">
+                            <div class="kanban-header"><span class="k-dot green-dot"></span> Selesai <span
+                                    class="k-count">0</span></div>
+                            <div class="kanban-cards"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: MASTER DATA ========== -->
+                <section class="page" id="page-master">
+                    <div class="card-grid single">
+                        <div class="glass-card large-card">
+                            <div class="card-head">
+                                <div>
+                                    <h3>Master Data Aset Kelas</h3>
+                                    <p class="dim">Data inventaris aset di seluruh gedung perkuliahan ITATS (Gedung A -
+                                        H).</p>
+                                </div>
+                                <button class="btn primary sm"><i class="ph ph-plus"></i> Tambah Aset</button>
+                            </div>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Ruangan</th>
+                                            <th>Kategori Kerusakan</th>
+                                            <th>Gedung</th>
+                                            <th>Total Laporan</th>
+                                            <th>Kondisi</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: QR CODE ========== -->
+                <section class="page" id="page-qrcode">
+                    <div class="card-grid single">
+                        <div class="glass-card large-card">
+                            <div class="card-head">
+                                <div>
+                                    <h3>QR Code Generator Ruangan</h3>
+                                    <p class="dim">Generate QR Code unik per ruangan. Saat dipindai mahasiswa, langsung
+                                        diarahkan ke form pelaporan.</p>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-field icon-field">
+                                    <i class="ph ph-buildings"></i>
+                                    <div>
+                                        <label>Pilih Gedung</label>
+                                        <select id="qrGedung">
+                                            <option value="">-- Pilih Gedung --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-field icon-field">
+                                    <i class="ph ph-door"></i>
+                                    <div>
+                                        <label>Nomor Ruangan</label>
+                                        <input type="text" id="qrRuang" placeholder="Contoh: 103">
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn primary" id="generateQR"><i class="ph ph-qr-code"></i><span>Generate QR
+                                    Code</span></button>
+
+                            <div class="qr-result" id="qrResult" style="display:none;">
+                                <div class="qr-preview glass-card">
+                                    <div class="qr-image" id="qrImage"></div>
+                                    <div class="qr-info">
+                                        <h4 id="qrLabel">Gedung A / Ruang 103</h4>
+                                        <p class="dim" id="qrUrl">asetlink.itats.ac.id/lapor?g=A&r=103</p>
+                                        <small class="dim">Cetak dan tempel di dinding ruangan</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="qr-grid" id="qrGrid"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== PAGE: TELEGRAM BOT ========== -->
+                <section class="page" id="page-telegram">
+                    <div class="card-grid single">
+                        <div class="glass-card large-card">
+                            <div class="card-head">
+                                <div>
+                                    <h3>Integrasi Chatbot Telegram Teknisi</h3>
+                                    <p class="dim">Interface berbasis Telegram Bot untuk menerima notifikasi tugas dan
+                                        update status pengerjaan.</p>
+                                </div>
+                            </div>
+
+                            <div class="tg-flow">
+                                <div class="tg-section">
+                                    <h4><i class="ph ph-flow-arrow"></i> Alur Koordinasi Tugas</h4>
+                                    <div class="tg-steps">
+                                        <div class="tg-step glass-card">
+                                            <div class="tg-num">1</div>
+                                            <div>
+                                                <strong>Admin menerima laporan masuk</strong>
+                                                <p class="dim">Admin memvalidasi tiket di Web Dashboard lalu menekan
+                                                    tombol "Tugaskan".</p>
+                                            </div>
+                                        </div>
+                                        <div class="tg-arrow"><i class="ph ph-arrow-down"></i></div>
+                                        <div class="tg-step glass-card">
+                                            <div class="tg-num">2</div>
+                                            <div>
+                                                <strong>Bot mengirim notifikasi ke Teknisi</strong>
+                                                <p class="dim">Teknisi menerima pesan otomatis di Telegram berisi detail
+                                                    kerusakan, lokasi, dan foto.</p>
+                                            </div>
+                                        </div>
+                                        <div class="tg-arrow"><i class="ph ph-arrow-down"></i></div>
+                                        <div class="tg-step glass-card">
+                                            <div class="tg-num">3</div>
+                                            <div>
+                                                <strong>Teknisi update progres via Telegram</strong>
+                                                <p class="dim">Teknisi membalas Bot dengan status: "Sedang Dikerjakan"
+                                                    atau "Selesai" + foto bukti.</p>
+                                            </div>
+                                        </div>
+                                        <div class="tg-arrow"><i class="ph ph-arrow-down"></i></div>
+                                        <div class="tg-step glass-card">
+                                            <div class="tg-num">4</div>
+                                            <div>
+                                                <strong>Admin update status manual di Dashboard</strong>
+                                                <p class="dim">Admin memperbarui status tiket di web berdasarkan
+                                                    konfirmasi dari teknisi di Telegram.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="tg-section">
+                                    <h4><i class="ph ph-chat-dots"></i> Simulasi Tampilan Chat Bot</h4>
+                                    <div class="tg-chat glass-card">
+                                        <div class="chat-header">
+                                            <img src="https://ui-avatars.com/api/?name=AL&size=32&background=0088cc&color=fff"
+                                                class="chat-avatar">
+                                            <div><strong>AsetLink Bot</strong><small class="dim">bot</small></div>
+                                        </div>
+                                        <div class="chat-body">
+                                            <div class="chat-msg bot">
+                                                <p><strong>Tugas Baru!</strong></p>
+                                                <p>Kerusakan: <strong>AC Tidak Dingin</strong></p>
+                                                <p>Lokasi: Gedung A / R.103</p>
+                                                <p>Pelapor: Mahasiswa (via QR Scan)</p>
+                                                <p>Deskripsi: AC menyala tapi tidak mengeluarkan udara dingin.</p>
+                                                <small>2 Mar 2026, 09:14 WIB</small>
+                                            </div>
+                                            <div class="chat-msg user">
+                                                <p>Siap, sedang menuju lokasi.</p>
+                                                <small>09:20</small>
+                                            </div>
+                                            <div class="chat-msg user">
+                                                <p>Sudah selesai. Freon habis, sudah diisi ulang.</p>
+                                                <small>10:45</small>
+                                            </div>
+                                            <div class="chat-msg bot">
+                                                <p>Terima kasih atas konfirmasinya! Laporan pengerjaan Anda telah
+                                                    diteruskan. <br><br>Mohon tunggu, Admin akan memvalidasi dan
+                                                    memperbarui status tiket <strong>#TK-34459</strong> di sistem Web.
+                                                </p>
+                                                <small>10:46</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="tg-section">
+                                    <h4><i class="ph ph-users-three"></i> Daftar Teknisi Terdaftar</h4>
+                                    <div class="tg-techs">
+                                        <div class="tech-card glass-card">
+                                            <img src="https://ui-avatars.com/api/?name=Budi&size=40&background=131B2A&color=00BFFF"
+                                                class="tech-avatar">
+                                            <div><strong>Pak Budi</strong><small class="dim">Spesialis AC &
+                                                    Pendingin</small></div>
+                                            <span class="tech-status online"><i class="ph ph-circle-fill"></i>
+                                                Online</span>
+                                        </div>
+                                        <div class="tech-card glass-card">
+                                            <img src="https://ui-avatars.com/api/?name=Andi&size=40&background=131B2A&color=00BFFF"
+                                                class="tech-avatar">
+                                            <div><strong>Pak Andi</strong><small class="dim">Spesialis
+                                                    Kelistrikan</small></div>
+                                            <span class="tech-status offline"><i class="ph ph-circle-fill"></i>
+                                                Offline</span>
+                                        </div>
+                                        <div class="tech-card glass-card">
+                                            <img src="https://ui-avatars.com/api/?name=Cahyo&size=40&background=131B2A&color=00BFFF"
+                                                class="tech-avatar">
+                                            <div><strong>Pak Cahyo</strong><small class="dim">Spesialis Furnitur &
+                                                    Umum</small></div>
+                                            <span class="tech-status offline"><i class="ph ph-circle-fill"></i>
+                                                Offline</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
