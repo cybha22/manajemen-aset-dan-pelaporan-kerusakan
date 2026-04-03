@@ -78,6 +78,12 @@ Notifikasi tugas masuk ke teknisi via Telegram
 
 ---
 
+## Video Demo
+
+https://github.com/user-attachments/assets/5e8b14f9-0268-4363-b7f4-b3914878f3c9
+
+---
+
 ## Menjalankan Aplikasi
 
 Aplikasi berjalan pada ekosistem lokal PC anda menggunakan stack berikut:
