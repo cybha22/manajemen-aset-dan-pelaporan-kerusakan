@@ -96,7 +96,7 @@ const modalTicket = ref({})
 const modalStatus = ref('')
 const modalTechId = ref('')
 let pollInterval = null
-const storageUrl = '/storage/'
+const storageUrl = '/api/file/'
 
 const colBaru = computed(() => tickets.value.filter(t => t.status === 'Baru' || t.status === 'Divalidasi'))
 const colProses = computed(() => tickets.value.filter(t => t.status === 'Ditugaskan' || t.status === 'Dikerjakan'))

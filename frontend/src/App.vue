@@ -7,6 +7,7 @@
     <div class="noise"></div>
   </div>
   <LoginPage v-if="$route.meta.isLogin" />
+  <PublicLayout v-else-if="$route.meta.public && !auth.isAdmin" />
   <AppLayout v-else />
   <ToastContainer ref="toastRef" />
 </template>
@@ -17,6 +18,7 @@ import { useAuthStore } from './stores/auth.js'
 import { useRouter } from 'vue-router'
 import { provideToast } from './composables/useToast.js'
 import AppLayout from './layouts/AppLayout.vue'
+import PublicLayout from './layouts/PublicLayout.vue'
 import LoginPage from './pages/LoginPage.vue'
 import ToastContainer from './components/ToastContainer.vue'
 

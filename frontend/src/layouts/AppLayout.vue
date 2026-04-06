@@ -8,6 +8,7 @@
             <div class="logo-name">AsetLink</div>
             <div class="logo-sub">SMART System</div>
           </div>
+          <button class="sidebar-close" @click="sidebarOpen = false"><i class="ph ph-x"></i></button>
         </div>
       </div>
 
@@ -52,6 +53,7 @@
         <div class="sidebar-copy">&copy; 2026 Sarpras ITATS</div>
       </div>
     </aside>
+    <div class="sidebar-overlay" v-if="sidebarOpen" @click="sidebarOpen = false"></div>
 
     <main class="main">
       <header class="topbar">
@@ -61,13 +63,6 @@
           <p>{{ $route.meta.sub || '' }}</p>
         </div>
         <div class="topbar-right">
-          <div class="topbar-user">
-            <div class="user-info">
-              <span class="u-name">{{ auth.isAdmin && auth.user ? auth.user.name : 'Mahasiswa' }}</span>
-              <span class="u-role">{{ auth.isAdmin ? 'Admin Sarpras' : 'Pengguna Publik' }}</span>
-            </div>
-            <img :src="auth.isAdmin && auth.user ? auth.avatarUrl(auth.user.name) : '/image.png'" class="u-avatar" alt="avatar">
-          </div>
         </div>
       </header>
 

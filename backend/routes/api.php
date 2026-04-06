@@ -30,6 +30,19 @@ Route::get('/buildings', [BuildingController::class, 'index']);
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 
+// Serve file storage langsung via API (bypass masalah symlink Windows + CSRF)
+Route::get('/file/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    if (file_exists($filePath)) {
+        return response()->make(
+            file_get_contents($filePath),
+            200,
+            ['Content-Type' => mime_content_type($filePath)]
+        );
+    }
+    abort(404);
+})->where('path', '.*');
+
 // Webhook Telegram — menerima pesan & callback dari teknisi via bot
 Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook']);
 

@@ -8,6 +8,7 @@ class ValidateCsrfForAll extends ValidateCsrfToken
 {
     protected $except = [
         'api/telegram/webhook',
+        'storage/*',
     ];
 
     protected function isReading($request): bool

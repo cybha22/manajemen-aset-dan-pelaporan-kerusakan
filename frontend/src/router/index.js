@@ -9,9 +9,9 @@ import QrCodePage from '../pages/QrCodePage.vue'
 import TelegramPage from '../pages/TelegramPage.vue'
 
 const routes = [
-    { path: '/', name: 'report', component: ReportPage, meta: { title: 'Buat Laporan Kerusakan', sub: 'Isi data secara lengkap untuk memproses tiket baru.' } },
+    { path: '/', name: 'report', component: ReportPage, meta: { title: 'Buat Laporan Kerusakan', sub: 'Isi data secara lengkap untuk memproses tiket baru.', public: true } },
     { path: '/report', redirect: '/' },
-    { path: '/track', name: 'track', component: TrackPage, meta: { title: 'Lacak Status Tiket', sub: 'Pantau progres perbaikan aset Anda secara real-time.' } },
+    { path: '/track', name: 'track', component: TrackPage, meta: { title: 'Lacak Status Tiket', sub: 'Pantau progres perbaikan aset Anda secara real-time.', public: true } },
     { path: '/login', name: 'login', component: LoginPage, meta: { title: 'Login Admin', sub: '', isLogin: true } },
     { path: '/dashboard', name: 'dashboard', component: DashboardPage, meta: { title: 'Dasbor Analitik', sub: 'Statistik performa pemeliharaan ruang kelas bulan ini.', admin: true } },
     { path: '/tickets', name: 'tickets', component: TicketsPage, meta: { title: 'Manajemen Tiket', sub: 'Kelola penugasan dan pantau status seluruh tiket.', admin: true } },

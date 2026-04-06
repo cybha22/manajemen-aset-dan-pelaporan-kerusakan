@@ -20,3 +20,16 @@ Route::get('/lapor', $serveSpa);
 Route::get('/admin', function () {
     return file_get_contents(public_path('admin.html'));
 });
+
+// Fallback untuk melayani file storage di Windows saat menggunakan php artisan serve
+Route::get('/storage/{path}', function ($path) {
+    if (app()->environment('local')) {
+        $filePath = storage_path('app/public/' . $path);
+        if (file_exists($filePath)) {
+            return response()->make(file_get_contents($filePath), 200, [
+                'Content-Type' => mime_content_type($filePath)
+            ]);
+        }
+    }
+    abort(404);
+})->where('path', '.*');

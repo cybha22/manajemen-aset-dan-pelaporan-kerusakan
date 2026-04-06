@@ -11,6 +11,8 @@ class EnsureApiCsrfOrToken
     protected $except = [
         'sanctum/csrf-cookie',
         'api/telegram/webhook',
+        'api/auth/login',
+        'api/tickets',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -22,6 +24,10 @@ class EnsureApiCsrfOrToken
         }
 
         if ($request->bearerToken()) {
+            return $next($request);
+        }
+
+        if ($request->isMethod('GET')) {
             return $next($request);
         }
 

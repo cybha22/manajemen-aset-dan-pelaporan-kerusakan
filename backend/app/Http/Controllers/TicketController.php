@@ -47,6 +47,19 @@ class TicketController extends Controller
             'category_id' => 'required|exists:categories,id',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'description' => 'required|string|min:10|max:1000',
+        ], [
+            'reporter_name.required' => 'Nama pelapor wajib diisi.',
+            'reporter_phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'reporter_phone.regex' => 'Format nomor WhatsApp tidak valid (harus diawali 08, 10-14 angka).',
+            'building_id.required' => 'Gedung wajib dilih.',
+            'room_number.required' => 'Nomor ruangan wajib diisi.',
+            'category_id.required' => 'Kategori aset wajib dipilih.',
+            'photo.image' => 'File bukti kerusakan harus berupa gambar.',
+            'photo.mimes' => 'Format gambar harus jpg, jpeg, png, atau webp.',
+            'photo.max' => 'Ukuran foto maksimal 5MB.',
+            'description.required' => 'Deskripsi kerusakan wajib diisi.',
+            'description.min' => 'Deskripsi kerusakan minimal 10 karakter.',
+            'description.max' => 'Deskripsi kerusakan tidak boleh lebih dari 1000 karakter.',
         ]);
 
         // Cari ruangan atau buat baru jika belum ada di database
