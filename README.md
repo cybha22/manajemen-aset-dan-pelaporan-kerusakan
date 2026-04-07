@@ -149,12 +149,32 @@ Buka terminal baru:
 ```bash
 cd frontend
 npm install
-npm run dev
 ```
 
+**Opsi A — Mode Development** (hot-reload, 2 port):
+```bash
+npm run dev
+```
+Akses frontend di `http://localhost:5173`, API di `http://localhost:8000`.
+
+**Opsi B — Mode Single Server** (1 port, seperti production):
+```bash
+npm run build
+```
+Lalu copy hasil build ke backend:
+```bash
+copy dist\index.html ..\backend\public\index.html
+xcopy dist\assets ..\backend\public\assets /E /Y
+```
+Akses seluruh aplikasi di `http://localhost:8000` saja.
+
 **4. Akses Aplikasi**
-- **Backend/API:** `http://localhost:8000`
-- **Frontend App:** `http://localhost:5173`
+
+| Mode | Frontend | API |
+|------|----------|-----|
+| Development | `http://localhost:5173` | `http://localhost:8000` |
+| Single Server | `http://localhost:8000` | `http://localhost:8000` |
+| Docker | `http://localhost` | `http://localhost:8000` |
 
 ---
 
@@ -166,52 +186,69 @@ asetlinkV2/
 |   |-- app/
 |   |   |-- Http/
 |   |   |   |-- Controllers/
-|   |   |   |   |-- AuthController.php      # Login & Logout Admin
-|   |   |   |   |-- TicketController.php    # CRUD Tiket Kerusakan
-|   |   |   |   |-- BuildingController.php  # Master Data Gedung
-|   |   |   |   |-- RoomController.php      # Master Data Ruangan
-|   |   |   |   |-- DashboardController.php # Statistik & Chart
-|   |   |   |   |-- TechnicianController.php
+|   |   |   |   |-- AuthController.php          # Login & Logout Admin
+|   |   |   |   |-- TicketController.php        # CRUD Tiket + Lacak
+|   |   |   |   |-- BuildingController.php      # Master Data Gedung
+|   |   |   |   |-- RoomController.php          # Master Data Ruangan
+|   |   |   |   |-- CategoryController.php      # Kategori Kerusakan
+|   |   |   |   |-- DashboardController.php     # Statistik & Chart
+|   |   |   |   |-- TechnicianController.php    # Data Teknisi
+|   |   |   |   |-- RoomAssetController.php     # Inventaris Aset
+|   |   |   |   |-- QrCodeController.php        # Generate QR Code
+|   |   |   |   |-- TelegramBotController.php   # Webhook & Bot Telegram
+|   |   |   |-- Middleware/
+|   |   |   |   |-- EnsureApiCsrfOrToken.php    # CSRF/Token guard API
 |   |   |-- Models/
+|   |-- bootstrap/
+|   |   |-- app.php                 # Konfigurasi middleware & routing
 |   |-- database/
-|   |   |-- migrations/             # file migrasi tabel
-|   |   |-- seeders/
+|   |   |-- migrations/             # File migrasi tabel
+|   |   |-- seeders/                # Seeder data awal (admin, gedung, dll)
 |   |-- routes/
-|   |   |-- api.php                 # Seluruh definisi route REST API
-|   |-- public/
+|   |   |-- api.php                 # Definisi route REST API
+|   |   |-- web.php                 # Route SPA & file serving
+|   |-- public/                     # Build frontend (index.html + assets)
 |   |-- Dockerfile
 |   |-- .env.example
-|   |-- .env.docker
 |   |-- composer.json
 |
 |-- frontend/                       # Vue.js 3 + Vite (SPA)
 |   |-- src/
-|   |   |-- services/              # Axios instance & API calls
-|   |   |-- assets/                # CSS & aset statis
-|   |   |-- components/            # Komponen reusable (Toast, ConfirmDialog)
-|   |   |-- composables/           # useToast composable
-|   |   |-- layouts/               # AppLayout (sidebar & topbar)
-|   |   |-- pages/                 # Halaman SPA
-|   |   |   |-- ReportPage.vue     # Form pelaporan kerusakan
-|   |   |   |-- TrackPage.vue      # Lacak status tiket
-|   |   |   |-- LoginPage.vue      # Login admin
-|   |   |   |-- DashboardPage.vue  # Dashboard analitik
-|   |   |   |-- TicketsPage.vue    # Kanban manajemen tiket
-|   |   |   |-- MasterPage.vue     # Master data aset & ruangan
-|   |   |   |-- QrCodePage.vue     # QR Code generator
-|   |   |   |-- TelegramPage.vue   # Info bot Telegram teknisi
+|   |   |-- services/
+|   |   |   |-- api.js              # Axios instance + token interceptor
+|   |   |-- assets/
+|   |   |   |-- style.css           # Design system & tema global
+|   |   |-- components/
+|   |   |   |-- ToastContainer.vue  # Notifikasi toast
+|   |   |   |-- ConfirmDialog.vue   # Dialog konfirmasi
+|   |   |-- composables/
+|   |   |   |-- useToast.js         # Composable provide/inject toast
+|   |   |-- layouts/
+|   |   |   |-- AppLayout.vue       # Layout admin (sidebar + topbar)
+|   |   |   |-- PublicLayout.vue    # Layout publik (header minimal)
+|   |   |-- pages/
+|   |   |   |-- ReportPage.vue      # Form pelaporan kerusakan
+|   |   |   |-- TrackPage.vue       # Lacak status tiket
+|   |   |   |-- LoginPage.vue       # Login admin
+|   |   |   |-- DashboardPage.vue   # Dashboard analitik + animasi chart
+|   |   |   |-- TicketsPage.vue     # Kanban manajemen tiket
+|   |   |   |-- MasterPage.vue      # Master data aset & ruangan
+|   |   |   |-- QrCodePage.vue      # QR Code generator ruangan
+|   |   |   |-- TelegramPage.vue    # Info bot Telegram teknisi
 |   |   |-- router/
-|   |   |-- stores/                # Pinia state management (auth)
-|   |   |-- App.vue
-|   |   |-- main.js
+|   |   |   |-- index.js            # Route + auth guard admin
+|   |   |-- stores/
+|   |   |   |-- auth.js             # Pinia store (login, token, user)
+|   |   |-- App.vue                 # Root component + layout switcher
+|   |   |-- main.js                 # Entry point Vue + Pinia + Router
 |   |-- Dockerfile
 |   |-- nginx.conf
 |   |-- package.json
 |   |-- vite.config.js
 |
 |-- flowcharts/
-|   |-- diagram/                   # ERD, Use Case, DFD, User Flow
-|   |-- previews/                  # Screenshot UI per aktor
+|   |-- diagram/                    # ERD, Use Case, DFD, User Flow
+|   |-- previews/                   # Screenshot UI per aktor
 |       |-- admin/
 |       |-- mhs/
 |       |-- teknisi/
