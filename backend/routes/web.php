@@ -17,9 +17,7 @@ Route::get('/qrcode', $serveSpa);
 Route::get('/telegram', $serveSpa);
 Route::get('/lapor', $serveSpa);
 
-Route::get('/admin', function () {
-    return file_get_contents(public_path('admin.html'));
-});
+
 
 // Fallback untuk melayani file storage di Windows saat menggunakan php artisan serve
 Route::get('/storage/{path}', function ($path) {

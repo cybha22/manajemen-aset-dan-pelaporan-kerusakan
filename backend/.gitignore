@@ -30,4 +30,5 @@ database/database.sqlite
 Homestead.json
 Homestead.yaml
 Thumbs.db
+_backup_old_frontend/
 
