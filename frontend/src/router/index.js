@@ -2,11 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ReportPage from '../pages/ReportPage.vue'
 import TrackPage from '../pages/TrackPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
-import DashboardPage from '../pages/DashboardPage.vue'
-import TicketsPage from '../pages/TicketsPage.vue'
-import MasterPage from '../pages/MasterPage.vue'
-import QrCodePage from '../pages/QrCodePage.vue'
-import TelegramPage from '../pages/TelegramPage.vue'
+
+const DashboardPage = () => import('../pages/DashboardPage.vue')
+const TicketsPage = () => import('../pages/TicketsPage.vue')
+const MasterPage = () => import('../pages/MasterPage.vue')
+const QrCodePage = () => import('../pages/QrCodePage.vue')
+const TelegramPage = () => import('../pages/TelegramPage.vue')
 
 const routes = [
     { path: '/', name: 'report', component: ReportPage, meta: { title: 'Buat Laporan Kerusakan', sub: 'Isi data secara lengkap untuk memproses tiket baru.', public: true } },

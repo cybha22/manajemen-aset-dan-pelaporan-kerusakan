@@ -55,50 +55,99 @@ let charts = []
 
 onMounted(async () => {
   try {
-    const res = await api.get('/api/dashboard/stats')
-    Object.assign(stats, res.data)
-  } catch (e) {}
-  await initCharts()
+    const res = await api.get('/api/dashboard/all')
+    const d = res.data
+    Object.assign(stats, d.stats)
+    initCharts(d.weekly, d.category, d.building, d.responseTime)
+  } catch (e) {
+    initCharts()
+  }
 })
 
 onUnmounted(() => {
   charts.forEach((c) => c.destroy())
 })
 
-async function initCharts() {
+function initCharts(weekly, category, building, responseTime) {
   Chart.defaults.color = '#7B8394'
   Chart.defaults.font.family = "'Outfit', sans-serif"
 
-  let weeklyData = { labels: ['W1','W2','W3','W4','W5','W6','W7','W8'], data: [0,0,0,0,0,0,0,0] }
-  let categoryData = { labels: ['AC','Proyektor','Kelistrikan','Furnitur'], data: [0,0,0,0] }
-  let buildingData = { labels: ['Ged.A','Ged.B','Ged.C','Ged.D','Ged.E','Ged.F','Ged.G','Ged.H'], data: [0,0,0,0,0,0,0,0] }
-  let responseTimeData = { labels: [], data: [] }
-
-  try {
-    const [wR, cR, bR, rtR] = await Promise.all([
-      api.get('/api/dashboard/chart/weekly'),
-      api.get('/api/dashboard/chart/category'),
-      api.get('/api/dashboard/chart/building'),
-      api.get('/api/dashboard/chart/response-time'),
-    ])
-    if (wR.data.labels) weeklyData = wR.data
-    if (cR.data.labels) categoryData = cR.data
-    if (bR.data.labels) buildingData = bR.data
-    if (rtR.data.labels) responseTimeData = rtR.data
-  } catch (e) {}
+  let weeklyData = weekly && weekly.labels ? weekly : { labels: ['W1','W2','W3','W4','W5','W6','W7','W8'], data: [0,0,0,0,0,0,0,0] }
+  let categoryData = category && category.labels ? category : { labels: ['AC','Proyektor','Kelistrikan','Furnitur'], data: [0,0,0,0] }
+  let buildingData = building && building.labels ? building : { labels: ['Ged.A','Ged.B','Ged.C','Ged.D','Ged.E','Ged.F','Ged.G','Ged.H'], data: [0,0,0,0,0,0,0,0] }
+  let responseTimeData = responseTime && responseTime.labels ? responseTime : { labels: [], data: [] }
 
   const ctxL = chartLineRef.value.getContext('2d')
   const grad = ctxL.createLinearGradient(0, 0, 0, 280)
   grad.addColorStop(0, 'rgba(138,43,226,.35)')
   grad.addColorStop(1, 'rgba(10,15,26,0)')
 
+  const totalDuration = 1500
+  const delayBetweenPoints = totalDuration / weeklyData.data.length
+
   charts.push(new Chart(ctxL, {
     type: 'line',
     data: {
       labels: weeklyData.labels,
-      datasets: [{ label: 'Laporan Masuk', data: weeklyData.data, borderColor: '#8A2BE2', backgroundColor: grad, borderWidth: 3, pointBackgroundColor: '#0A0F1A', pointBorderColor: '#00FF7F', pointBorderWidth: 3, pointRadius: 5, pointHoverRadius: 7, fill: true, tension: .4 }]
+      datasets: [{
+        label: 'Laporan Masuk',
+        data: weeklyData.data,
+        borderColor: '#8A2BE2',
+        backgroundColor: grad,
+        borderWidth: 3,
+        pointBackgroundColor: '#0A0F1A',
+        pointBorderColor: '#00FF7F',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: .4
+      }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,15,26,.95)', bodyColor: '#00FF7F', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1, padding: 12, displayColors: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.04)', borderDash: [4,4] }, border: { display: false } }, x: { grid: { display: false }, border: { display: false } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        x: {
+          type: 'number',
+          easing: 'easeOutQuart',
+          duration: delayBetweenPoints,
+          from: NaN,
+          delay(ctx) {
+            if (ctx.type !== 'data' || ctx.xStarted) return 0
+            ctx.xStarted = true
+            return ctx.index * delayBetweenPoints
+          }
+        },
+        y: {
+          type: 'number',
+          easing: 'easeOutQuart',
+          duration: delayBetweenPoints,
+          from: (ctx) => ctx.chart.scales.y.getPixelForValue(0),
+          delay(ctx) {
+            if (ctx.type !== 'data' || ctx.yStarted) return 0
+            ctx.yStarted = true
+            return ctx.index * delayBetweenPoints
+          }
+        },
+        radius: {
+          duration: 400,
+          easing: 'easeOutQuart',
+          from: 0,
+          delay(ctx) {
+            return totalDuration + ctx.index * 80
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: 'rgba(10,15,26,.95)', bodyColor: '#00FF7F', borderColor: 'rgba(255,255,255,.1)', borderWidth: 1, padding: 12, displayColors: false }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.04)', borderDash: [4,4] }, border: { display: false } },
+        x: { grid: { display: false }, border: { display: false } }
+      }
+    }
   }))
 
   charts.push(new Chart(chartDonutRef.value, {

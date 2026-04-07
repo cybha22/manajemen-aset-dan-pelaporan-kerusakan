@@ -8,6 +8,7 @@ use App\Models\Building;
 use App\Models\Technician;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
@@ -139,6 +140,7 @@ class TicketController extends Controller
         }
 
         $ticket->update($data);
+        Cache::forget($this->trackCacheKey($ticket->ticket_code));
 
         $ticket = $ticket->fresh()->load(['room.building', 'category', 'admin', 'technician']);
 
@@ -155,6 +157,8 @@ class TicketController extends Controller
     // ============================================================
     public function destroy(Ticket $ticket)
     {
+        Cache::forget($this->trackCacheKey($ticket->ticket_code));
+
         if ($ticket->photo_path) {
             Storage::disk('public')->delete($ticket->photo_path);
         }
@@ -170,40 +174,52 @@ class TicketController extends Controller
     // ============================================================
     public function track($code)
     {
-        $ticket = Ticket::where('ticket_code', $code)->with(['room.building', 'category'])->first();
+        $code = strtoupper(trim($code));
+        $cacheKey = $this->trackCacheKey($code);
+        $payload = Cache::remember($cacheKey, now()->addSeconds(30), function () use ($code) {
+            $ticket = Ticket::where('ticket_code', $code)
+                ->with(['room.building', 'category'])
+                ->first();
 
-        if (!$ticket) {
+            if (!$ticket) {
+                return null;
+            }
+
+            // Bangun timeline progres berdasarkan status saat ini
+            $timeline = [];
+            $timeline[] = ['status' => 'Baru', 'label' => 'Laporan Diterima', 'time' => $ticket->created_at->format('d M Y, H:i'), 'done' => true];
+
+            if (in_array($ticket->status, ['Divalidasi', 'Ditugaskan', 'Dikerjakan', 'Selesai'])) {
+                $timeline[] = ['status' => 'Divalidasi', 'label' => 'Divalidasi Admin', 'time' => $ticket->updated_at->format('d M Y, H:i'), 'done' => true];
+            }
+
+            if (in_array($ticket->status, ['Ditugaskan', 'Dikerjakan', 'Selesai'])) {
+                $timeline[] = ['status' => 'Ditugaskan', 'label' => 'Teknisi Ditugaskan', 'time' => $ticket->assigned_at ? $ticket->assigned_at->format('d M Y, H:i') : '-', 'done' => true];
+            }
+
+            if (in_array($ticket->status, ['Dikerjakan', 'Selesai'])) {
+                $timeline[] = ['status' => 'Dikerjakan', 'label' => 'Sedang Dikerjakan', 'time' => '-', 'done' => true];
+            }
+
+            if ($ticket->status === 'Selesai') {
+                $timeline[] = ['status' => 'Selesai', 'label' => 'Perbaikan Selesai', 'time' => $ticket->resolved_at ? $ticket->resolved_at->format('d M Y, H:i') : '-', 'done' => true];
+            }
+
+            return [
+                'ticket_code' => $ticket->ticket_code,
+                'location' => $ticket->room->building->name . ' / R.' . $ticket->room->room_number,
+                'category' => $ticket->category->name,
+                'status' => $ticket->status,
+                'created_at' => $ticket->created_at->format('d M Y, H:i'),
+                'timeline' => $timeline,
+            ];
+        });
+
+        if (!$payload) {
             return response()->json(['message' => 'Ticket not found.'], 404);
         }
 
-        // Bangun timeline progres berdasarkan status saat ini
-        $timeline = [];
-        $timeline[] = ['status' => 'Baru', 'label' => 'Laporan Diterima', 'time' => $ticket->created_at->format('d M Y, H:i'), 'done' => true];
-
-        if (in_array($ticket->status, ['Divalidasi', 'Ditugaskan', 'Dikerjakan', 'Selesai'])) {
-            $timeline[] = ['status' => 'Divalidasi', 'label' => 'Divalidasi Admin', 'time' => $ticket->updated_at->format('d M Y, H:i'), 'done' => true];
-        }
-
-        if (in_array($ticket->status, ['Ditugaskan', 'Dikerjakan', 'Selesai'])) {
-            $timeline[] = ['status' => 'Ditugaskan', 'label' => 'Teknisi Ditugaskan', 'time' => $ticket->assigned_at ? $ticket->assigned_at->format('d M Y, H:i') : '-', 'done' => true];
-        }
-
-        if (in_array($ticket->status, ['Dikerjakan', 'Selesai'])) {
-            $timeline[] = ['status' => 'Dikerjakan', 'label' => 'Sedang Dikerjakan', 'time' => '-', 'done' => true];
-        }
-
-        if ($ticket->status === 'Selesai') {
-            $timeline[] = ['status' => 'Selesai', 'label' => 'Perbaikan Selesai', 'time' => $ticket->resolved_at ? $ticket->resolved_at->format('d M Y, H:i') : '-', 'done' => true];
-        }
-
-        return response()->json([
-            'ticket_code' => $ticket->ticket_code,
-            'location' => $ticket->room->building->name . ' / R.' . $ticket->room->room_number,
-            'category' => $ticket->category->name,
-            'status' => $ticket->status,
-            'created_at' => $ticket->created_at->format('d M Y, H:i'),
-            'timeline' => $timeline,
-        ]);
+        return response()->json($payload);
     }
 
     // ============================================================
@@ -217,5 +233,10 @@ class TicketController extends Controller
         } while (Ticket::where('ticket_code', $code)->exists());
 
         return $code;
+    }
+
+    private function trackCacheKey(string $code): string
+    {
+        return 'public:track:' . $code;
     }
 }

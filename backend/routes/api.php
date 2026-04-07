@@ -75,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/categories', CategoryController::class)->except(['index']);
     Route::apiResource('/technicians', TechnicianController::class);
 
-    // Data untuk Dasbor Analitik (statistik, grafik mingguan, per kategori, per gedung, waktu respon)
+    Route::get('/dashboard/all', [DashboardController::class, 'all']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/chart/weekly', [DashboardController::class, 'chartWeekly']);
     Route::get('/dashboard/chart/category', [DashboardController::class, 'chartCategory']);

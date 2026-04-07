@@ -42,8 +42,8 @@
       <div v-if="modalVisible" class="ticket-modal-overlay" @click.self="modalVisible = false">
         <div class="glass-card" style="padding:2rem;min-width:450px;max-width:550px;max-height:85vh;overflow-y:auto">
           <h3 style="margin-bottom:1.5rem">Tiket #{{ modalTicket.ticket_code }}</h3>
-          <div v-if="modalTicket.photo_path" style="margin-bottom:1.5rem;text-align:center">
-            <img :src="storageUrl + modalTicket.photo_path" style="max-width:100%;max-height:250px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.1)" alt="Bukti Foto">
+          <div v-if="modalTicket.photo_path && currentPhotoSrc" style="margin-bottom:1.5rem;text-align:center">
+            <img :src="currentPhotoSrc" @error="handlePhotoError" style="max-width:100%;max-height:250px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,255,255,.1)" alt="Bukti Foto">
           </div>
           <div style="margin-bottom:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem">
             <div class="dim">Pelapor:<br><strong style="color:#fff">{{ modalTicket.reporter_name }} (WA: {{ modalTicket.reporter_phone }})</strong></div>
@@ -95,8 +95,11 @@ const modalVisible = ref(false)
 const modalTicket = ref({})
 const modalStatus = ref('')
 const modalTechId = ref('')
+const photoCandidates = ref([])
+const photoIndex = ref(0)
 let pollInterval = null
 const storageUrl = '/api/file/'
+const currentPhotoSrc = computed(() => photoCandidates.value[photoIndex.value] || '')
 
 const colBaru = computed(() => tickets.value.filter(t => t.status === 'Baru' || t.status === 'Divalidasi'))
 const colProses = computed(() => tickets.value.filter(t => t.status === 'Ditugaskan' || t.status === 'Dikerjakan'))
@@ -122,11 +125,42 @@ async function openModal(ticket) {
   modalTicket.value = ticket
   modalStatus.value = ticket.status
   modalTechId.value = ticket.technician_id || ''
+  preparePhotoCandidates(ticket)
   try {
     const res = await api.get('/api/technicians')
     technicians.value = res.data
   } catch (e) {}
   modalVisible.value = true
+}
+
+function normalizePath(path) {
+  return String(path || '').replace(/\\/g, '/').replace(/^\/+/, '')
+}
+
+function preparePhotoCandidates(ticket) {
+  const candidates = []
+  const rawPath = normalizePath(ticket?.photo_path)
+  const photoUrl = String(ticket?.photo_url || '')
+
+  if (photoUrl) {
+    candidates.push(photoUrl)
+  }
+
+  if (rawPath) {
+    candidates.push(storageUrl + rawPath)
+    candidates.push('/api/file/' + encodeURI(rawPath))
+  }
+
+  photoCandidates.value = [...new Set(candidates)]
+  photoIndex.value = 0
+}
+
+function handlePhotoError() {
+  if (photoIndex.value < photoCandidates.value.length - 1) {
+    photoIndex.value += 1
+    return
+  }
+  showToast('Bukti foto tidak dapat dimuat', 'warning')
 }
 
 async function saveTicket() {

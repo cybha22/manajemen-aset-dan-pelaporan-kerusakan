@@ -5,19 +5,52 @@ namespace App\Http\Controllers;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
-// ============================================================
-// DashboardController — Menyediakan data untuk Dasbor Analitik Admin
-// Menghitung statistik tiket dan data grafik
-// ============================================================
 class DashboardController extends Controller
 {
-    // ============================================================
-    // Statistik utama: Total tiket, Selesai, Dikerjakan, Baru, Rata-rata waktu
-    // Ditampilkan di 4 kartu statistik di bagian atas dashboard
-    // ============================================================
+    public function all()
+    {
+        return response()->json(
+            Cache::remember('dashboard:all', now()->addSeconds(60), function () {
+                return [
+                    'stats'        => $this->buildStats(),
+                    'weekly'       => $this->buildWeekly(),
+                    'category'     => $this->buildCategory(),
+                    'building'     => $this->buildBuilding(),
+                    'responseTime' => $this->buildResponseTime(),
+                ];
+            })
+        );
+    }
+
     public function stats()
+    {
+        return response()->json($this->buildStats());
+    }
+
+    public function chartWeekly()
+    {
+        return response()->json($this->buildWeekly());
+    }
+
+    public function chartCategory()
+    {
+        return response()->json($this->buildCategory());
+    }
+
+    public function chartBuilding()
+    {
+        return response()->json($this->buildBuilding());
+    }
+
+    public function chartResponseTime()
+    {
+        return response()->json($this->buildResponseTime());
+    }
+
+    private function buildStats(): array
     {
         $total = Ticket::count();
         $resolved = Ticket::where('status', 'Selesai')
@@ -26,47 +59,41 @@ class DashboardController extends Controller
             ->count();
         $inProgress = Ticket::whereIn('status', ['Divalidasi', 'Ditugaskan', 'Dikerjakan'])->count();
         $pending = Ticket::where('status', 'Baru')->count();
-
-        // Hitung rata-rata waktu penyelesaian (dari created_at sampai resolved_at) dalam jam
         $avgHours = Ticket::where('status', 'Selesai')
             ->whereNotNull('resolved_at')
             ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at) / 60.0) as avg_hours')
             ->value('avg_hours');
 
-        return response()->json([
+        return [
             'total' => $total,
             'selesai' => $resolved,
             'dikerjakan' => $inProgress,
             'baru' => $pending,
             'avg_resolution_hours' => round($avgHours ?? 0, 1),
-        ]);
+        ];
     }
 
-    // ============================================================
-    // Data grafik "Tren Pelaporan Mingguan" (line chart)
-    // Menghitung jumlah tiket per minggu selama 8 minggu terakhir
-    // ============================================================
-    public function chartWeekly()
+    private function buildWeekly(): array
     {
-        $weeks = collect();
+        $start = now()->subWeeks(7)->startOfWeek();
+        $rows = Ticket::where('created_at', '>=', $start)
+            ->selectRaw('YEARWEEK(created_at, 1) as yw, COUNT(*) as cnt')
+            ->groupBy('yw')
+            ->pluck('cnt', 'yw');
+
+        $labels = [];
+        $data   = [];
         for ($i = 7; $i >= 0; $i--) {
-            $start = now()->subWeeks($i)->startOfWeek();
-            $end = now()->subWeeks($i)->endOfWeek();
-            $count = Ticket::whereBetween('created_at', [$start, $end])->count();
-            $weeks->push(['label' => 'W' . (8 - $i), 'count' => $count]);
+            $w = now()->subWeeks($i);
+            $yw = $w->format('oW');
+            $labels[] = 'W' . (8 - $i);
+            $data[] = (int) ($rows[$yw] ?? 0);
         }
 
-        return response()->json([
-            'labels' => $weeks->pluck('label'),
-            'data' => $weeks->pluck('count'),
-        ]);
+        return compact('labels', 'data');
     }
 
-    // ============================================================
-    // Data grafik "Distribusi Kategori" (donut chart)
-    // Menghitung jumlah tiket per kategori kerusakan (AC, Proyektor, dll)
-    // ============================================================
-    public function chartCategory()
+    private function buildCategory(): array
     {
         $data = Ticket::select('category_id', DB::raw('COUNT(*) as total'))
             ->groupBy('category_id')
@@ -77,17 +104,13 @@ class DashboardController extends Controller
                 'count' => $item->total,
             ]);
 
-        return response()->json([
-            'labels' => $data->pluck('label'),
-            'data' => $data->pluck('count'),
-        ]);
+        return [
+            'labels' => $data->pluck('label')->values(),
+            'data'   => $data->pluck('count')->values(),
+        ];
     }
 
-    // ============================================================
-    // Data grafik "Performa per Gedung" (bar chart)
-    // Menghitung jumlah tiket per gedung (A, B, C, dll)
-    // ============================================================
-    public function chartBuilding()
+    private function buildBuilding(): array
     {
         $data = Ticket::select('room_id', DB::raw('COUNT(*) as total'))
             ->groupBy('room_id')
@@ -96,18 +119,13 @@ class DashboardController extends Controller
             ->groupBy(fn($item) => $item->room->building->name)
             ->map(fn($group) => $group->sum('total'));
 
-        return response()->json([
-            'labels' => $data->keys(),
-            'data' => $data->values(),
-        ]);
+        return [
+            'labels' => $data->keys()->values(),
+            'data'   => $data->values()->values(),
+        ];
     }
 
-    // ============================================================
-    // Data grafik "Rata-rata Waktu Respon (Jam)" (horizontal bar chart)
-    // Menghitung rata-rata waktu penyelesaian per kategori kerusakan
-    // Rumus: AVG(resolved_at - created_at) dalam jam per kategori
-    // ============================================================
-    public function chartResponseTime()
+    private function buildResponseTime(): array
     {
         $data = Ticket::where('status', 'Selesai')
             ->whereNotNull('resolved_at')
@@ -120,9 +138,9 @@ class DashboardController extends Controller
                 'hours' => round($item->avg_hours, 1),
             ]);
 
-        return response()->json([
-            'labels' => $data->pluck('label'),
-            'data' => $data->pluck('hours'),
-        ]);
+        return [
+            'labels' => $data->pluck('label')->values(),
+            'data'   => $data->pluck('hours')->values(),
+        ];
     }
 }

@@ -13,6 +13,10 @@ class Ticket extends Model
 {
     use HasFactory;
 
+    protected $appends = [
+        'photo_url',
+    ];
+
     // Kolom yang boleh diisi secara mass-assignment
     protected $fillable = [
         'ticket_code',
@@ -60,5 +64,16 @@ class Ticket extends Model
     public function technician()
     {
         return $this->belongsTo(Technician::class);
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (!$this->photo_path) {
+            return null;
+        }
+
+        $path = str_replace('\\', '/', ltrim($this->photo_path, '/'));
+
+        return '/api/file/' . $path;
     }
 }

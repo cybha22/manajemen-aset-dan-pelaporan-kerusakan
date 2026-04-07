@@ -4,12 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        return response()->json(Category::all(['id', 'name', 'description']));
+        $data = Cache::remember('public:categories:list', now()->addMinutes(30), function () {
+            return Category::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'description']);
+        });
+
+        return response()->json($data);
     }
 
     public function store(Request $request)
@@ -20,6 +27,7 @@ class CategoryController extends Controller
         ]);
 
         $category = Category::create($request->only('name', 'description'));
+        Cache::forget('public:categories:list');
 
         return response()->json(['data' => $category], 201);
     }
@@ -32,6 +40,7 @@ class CategoryController extends Controller
         ]);
 
         $category->update($request->only('name', 'description'));
+        Cache::forget('public:categories:list');
 
         return response()->json(['data' => $category]);
     }
@@ -39,6 +48,7 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         $category->delete();
+        Cache::forget('public:categories:list');
 
         return response()->json(['message' => 'Category deleted successfully.']);
     }

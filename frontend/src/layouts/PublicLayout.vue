@@ -26,9 +26,9 @@
 
     <div class="public-content">
       <router-view v-slot="{ Component }">
-        <transition name="page-fade" mode="out-in">
+        <keep-alive>
           <component :is="Component" />
-        </transition>
+        </keep-alive>
       </router-view>
     </div>
   </div>
@@ -40,6 +40,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 function goTo(path) {
+  if (router.currentRoute.value.path === path) return
   router.push(path)
 }
 </script>
@@ -94,19 +95,6 @@ function goTo(path) {
   max-width: 780px;
   margin: 0 auto;
   box-sizing: border-box;
-}
-
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-.page-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
 }
 
 @media (max-width: 1024px) {

@@ -7,7 +7,7 @@
             <h3>Form Pelaporan Kerusakan</h3>
             <p class="dim">Lengkapi semua kolom. Tiket akan digenerate otomatis.</p>
           </div>
-          <div class="badge purple">{{ ticketBadge }}</div>
+
         </div>
         <form @submit.prevent="submitReport" @reset="resetForm">
           <div class="form-row">
@@ -174,6 +174,13 @@ const form = reactive({
   description: '',
 })
 
+function resetSubmitState() {
+  submitting.value = false
+  submitText.value = 'Kirim Laporan'
+  submitIcon.value = 'ph ph-paper-plane-right'
+  submitBtnStyle.value = {}
+}
+
 function triggerFile() {
   if (fileInputRef.value) fileInputRef.value.click()
 }
@@ -226,10 +233,12 @@ function resetForm() {
   selectedFile = null
   fileName.value = ''
   ticketBadge.value = 'ID: #TK-00000'
+  resetSubmitState()
 }
 
 function closeSuccessModal() {
   showSuccessModal.value = false;
+  copied.value = false;
   resetForm();
 }
 

@@ -7,12 +7,19 @@ use App\Models\Room;
 use App\Models\Category;
 use App\Models\Technician;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BuildingController extends Controller
 {
     public function index()
     {
-        return response()->json(Building::all(['id', 'code', 'name']));
+        $data = Cache::remember('public:buildings:list', now()->addMinutes(30), function () {
+            return Building::query()
+                ->orderBy('name')
+                ->get(['id', 'code', 'name']);
+        });
+
+        return response()->json($data);
     }
 
     public function store(Request $request)
@@ -23,6 +30,7 @@ class BuildingController extends Controller
         ]);
 
         $building = Building::create($request->only('code', 'name'));
+        Cache::forget('public:buildings:list');
 
         return response()->json(['data' => $building], 201);
     }
@@ -35,6 +43,7 @@ class BuildingController extends Controller
         ]);
 
         $building->update($request->only('code', 'name'));
+        Cache::forget('public:buildings:list');
 
         return response()->json(['data' => $building]);
     }
@@ -42,6 +51,7 @@ class BuildingController extends Controller
     public function destroy(Building $building)
     {
         $building->delete();
+        Cache::forget('public:buildings:list');
 
         return response()->json(['message' => 'Building deleted successfully.']);
     }
