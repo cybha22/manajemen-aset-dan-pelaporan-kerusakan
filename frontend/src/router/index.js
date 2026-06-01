@@ -37,4 +37,29 @@ router.beforeEach((to, from, next) => {
     next()
 })
 
+router.onError((error) => {
+    const message = String(error?.message || '')
+    const chunkFailure = [
+        'Failed to fetch dynamically imported module',
+        'Importing a module script failed',
+        'error loading dynamically imported module',
+        'Loading chunk',
+    ].some((item) => message.includes(item))
+
+    if (!chunkFailure) return
+
+    const reloadKey = 'asetlink-spa-chunk-reload'
+    if (sessionStorage.getItem(reloadKey) === '1') {
+        sessionStorage.removeItem(reloadKey)
+        return
+    }
+
+    sessionStorage.setItem(reloadKey, '1')
+    window.location.reload()
+})
+
+router.afterEach(() => {
+    sessionStorage.removeItem('asetlink-spa-chunk-reload')
+})
+
 export default router

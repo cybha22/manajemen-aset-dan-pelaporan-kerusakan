@@ -51,6 +51,13 @@ class RoomController extends Controller
         return response()->json(['data' => $room], 201);
     }
 
+    public function show(Room $room)
+    {
+        return response()->json([
+            'data' => $room->load(['building', 'assets.category', 'tickets.category']),
+        ]);
+    }
+
     public function update(Request $request, Room $room)
     {
         $request->validate([

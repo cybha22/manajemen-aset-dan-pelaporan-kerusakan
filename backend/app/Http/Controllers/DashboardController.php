@@ -75,16 +75,29 @@ class DashboardController extends Controller
 
     private function buildWeekly(): array
     {
-        $start = now()->subWeeks(7)->startOfWeek();
-        $rows = Ticket::where('created_at', '>=', $start)
-            ->selectRaw('YEARWEEK(created_at, 1) as yw, COUNT(*) as cnt')
-            ->groupBy('yw')
-            ->pluck('cnt', 'yw');
+        $anchor = now();
+        $currentStart = $anchor->copy()->subWeeks(7)->startOfWeek();
+        $hasRecentData = Ticket::where('created_at', '>=', $currentStart)->exists();
+
+        if (!$hasRecentData) {
+            $latest = Ticket::max('created_at');
+            if ($latest) {
+                $anchor = Carbon::parse($latest);
+            }
+        }
+
+        $start = $anchor->copy()->subWeeks(7)->startOfWeek();
+        $end = $anchor->copy()->endOfWeek();
+
+        $rows = Ticket::whereBetween('created_at', [$start, $end])
+            ->get(['created_at'])
+            ->groupBy(fn($ticket) => $ticket->created_at->format('oW'))
+            ->map(fn($group) => $group->count());
 
         $labels = [];
         $data   = [];
         for ($i = 7; $i >= 0; $i--) {
-            $w = now()->subWeeks($i);
+            $w = $anchor->copy()->subWeeks($i);
             $yw = $w->format('oW');
             $labels[] = 'W' . (8 - $i);
             $data[] = (int) ($rows[$yw] ?? 0);

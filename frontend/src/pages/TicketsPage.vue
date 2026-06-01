@@ -1,5 +1,5 @@
 <template>
-  <section class="page active">
+  <section class="page active tickets-page">
     <div class="kanban-board">
       <div class="kanban-col">
         <div class="kanban-header"><span class="k-dot red-dot"></span> Baru Masuk <span class="k-count">{{ colBaru.length }}</span></div>
@@ -8,7 +8,7 @@
             <div class="k-tag red">{{ t.status }}</div>
             <h4>{{ t.category?.name }}</h4>
             <p class="dim">{{ formatLoc(t) }}</p>
-            <p class="dim" style="font-size:.78rem;margin-top:2px">#{{ t.ticket_code }}</p>
+            <p class="dim k-code">#{{ t.ticket_code }}</p>
             <div class="k-footer"><small class="dim">{{ formatDate(t.created_at) }}</small></div>
           </div>
         </div>
@@ -20,7 +20,7 @@
             <div class="k-tag blue-tag">{{ t.status }}</div>
             <h4>{{ t.category?.name }}</h4>
             <p class="dim">{{ formatLoc(t) }}</p>
-            <p class="dim" style="font-size:.78rem;margin-top:2px">#{{ t.ticket_code }}</p>
+            <p class="dim k-code">#{{ t.ticket_code }}</p>
             <div class="k-footer"><small class="dim">Tek. {{ t.technician?.name }}</small></div>
           </div>
         </div>
@@ -31,10 +31,33 @@
           <div v-for="t in colSelesai" :key="t.id" class="k-card glass-card done-card" @click="openModal(t)">
             <h4>{{ t.category?.name }}</h4>
             <p class="dim">{{ formatLoc(t) }}</p>
-            <p class="dim" style="font-size:.78rem;margin-top:2px">#{{ t.ticket_code }}</p>
-            <div class="k-footer"><i class="ph ph-check-circle" style="color:var(--green)"></i><small class="dim">Selesai {{ formatDate(t.created_at) }}</small></div>
+            <p class="dim k-code">#{{ t.ticket_code }}</p>
+            <div class="k-footer done-footer"><i class="ph ph-check-circle"></i><small class="dim">Selesai {{ formatDate(t.resolved_at || t.updated_at || t.created_at) }}</small></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div v-if="pagination.total > 0" class="tickets-pagination glass-card">
+      <div class="pagination-info">
+        <strong>{{ pagination.from || 0 }}-{{ pagination.to || 0 }}</strong>
+        <span>dari {{ pagination.total }} tiket</span>
+      </div>
+      <div class="pagination-actions">
+        <button type="button" class="page-btn page-btn-wide" :disabled="pagination.current_page <= 1" @click="changePage(pagination.current_page - 1)">
+          <i class="ph ph-caret-left"></i>
+          Sebelumnya
+        </button>
+        <button v-for="page in visiblePages" :key="page" type="button" class="page-btn page-number" :class="{ active: page === pagination.current_page }" @click="changePage(page)">
+          {{ page }}
+        </button>
+        <button type="button" class="page-btn page-btn-wide" :disabled="pagination.current_page >= pagination.last_page" @click="changePage(pagination.current_page + 1)">
+          Berikutnya
+          <i class="ph ph-caret-right"></i>
+        </button>
+      </div>
+      <div class="pagination-page">
+        Halaman {{ pagination.current_page }} dari {{ pagination.last_page }}
       </div>
     </div>
 
@@ -91,6 +114,14 @@ import { useToast } from '../composables/useToast.js'
 const { showToast } = useToast()
 const tickets = ref([])
 const technicians = ref([])
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
+})
 const modalVisible = ref(false)
 const modalTicket = ref({})
 const modalStatus = ref('')
@@ -104,6 +135,13 @@ const currentPhotoSrc = computed(() => photoCandidates.value[photoIndex.value] |
 const colBaru = computed(() => tickets.value.filter(t => t.status === 'Baru' || t.status === 'Divalidasi'))
 const colProses = computed(() => tickets.value.filter(t => t.status === 'Ditugaskan' || t.status === 'Dikerjakan'))
 const colSelesai = computed(() => tickets.value.filter(t => t.status === 'Selesai'))
+const visiblePages = computed(() => {
+  const current = pagination.value.current_page
+  const last = pagination.value.last_page
+  const start = Math.max(1, current - 2)
+  const end = Math.min(last, current + 2)
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+})
 
 function formatLoc(t) {
   if (!t.room) return ''
@@ -114,11 +152,24 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-async function loadTickets() {
+async function loadTickets(page = pagination.value.current_page) {
   try {
-    const res = await api.get('/api/tickets')
+    const res = await api.get('/api/tickets', { params: { page } })
     tickets.value = res.data.data || res.data
+    pagination.value = {
+      current_page: res.data.current_page || 1,
+      last_page: res.data.last_page || 1,
+      per_page: res.data.per_page || tickets.value.length || 15,
+      total: res.data.total || tickets.value.length,
+      from: res.data.from || (tickets.value.length ? 1 : 0),
+      to: res.data.to || tickets.value.length,
+    }
   } catch (e) {}
+}
+
+function changePage(page) {
+  if (page < 1 || page > pagination.value.last_page || page === pagination.value.current_page) return
+  loadTickets(page)
 }
 
 async function openModal(ticket) {
@@ -182,7 +233,7 @@ async function saveTicket() {
 
 onMounted(() => {
   loadTickets()
-  pollInterval = setInterval(loadTickets, 20000)
+  pollInterval = setInterval(() => loadTickets(), 20000)
 })
 
 onUnmounted(() => {

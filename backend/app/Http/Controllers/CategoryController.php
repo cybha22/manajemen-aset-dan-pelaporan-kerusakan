@@ -32,6 +32,11 @@ class CategoryController extends Controller
         return response()->json(['data' => $category], 201);
     }
 
+    public function show(Category $category)
+    {
+        return response()->json(['data' => $category->load('tickets')]);
+    }
+
     public function update(Request $request, Category $category)
     {
         $request->validate([

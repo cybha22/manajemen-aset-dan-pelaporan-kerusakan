@@ -14,12 +14,12 @@ class QrCodeController extends Controller
 
         $url = config('app.url') . '/lapor?g=' . $room->building->code . '&r=' . $room->room_number;
 
-        $qrCode = QrCode::format('png')
+        $qrCode = QrCode::format('svg')
             ->size(400)
             ->margin(2)
             ->generate($url);
 
         return response($qrCode)
-            ->header('Content-Type', 'image/png');
+            ->header('Content-Type', 'image/svg+xml');
     }
 }

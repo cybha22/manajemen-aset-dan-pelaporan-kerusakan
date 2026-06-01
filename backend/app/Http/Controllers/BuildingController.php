@@ -35,6 +35,11 @@ class BuildingController extends Controller
         return response()->json(['data' => $building], 201);
     }
 
+    public function show(Building $building)
+    {
+        return response()->json(['data' => $building->load('rooms')]);
+    }
+
     public function update(Request $request, Building $building)
     {
         $request->validate([

@@ -28,6 +28,11 @@ class TechnicianController extends Controller
         return response()->json(['data' => $technician], 201);
     }
 
+    public function show(Technician $technician)
+    {
+        return response()->json(['data' => $technician->load('tickets')]);
+    }
+
     public function update(Request $request, Technician $technician)
     {
         $request->validate([
