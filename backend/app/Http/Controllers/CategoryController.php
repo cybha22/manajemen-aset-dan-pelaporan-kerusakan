@@ -8,8 +8,17 @@ use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Mode pagination dipakai halaman admin; default tetap array untuk dropdown publik.
+        if ($this->wantsPagination($request)) {
+            $data = Category::query()
+                ->orderBy('name')
+                ->paginate($this->perPage($request));
+
+            return response()->json($data);
+        }
+
         $data = Cache::remember('public:categories:list', now()->addMinutes(30), function () {
             return Category::query()
                 ->orderBy('name')

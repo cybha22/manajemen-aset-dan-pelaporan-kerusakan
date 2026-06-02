@@ -9,9 +9,16 @@ class RoomAssetController extends Controller
 {
     public function index(Request $request)
     {
-        $assets = RoomAsset::with('category')
+        $query = RoomAsset::with('category')
             ->where('room_id', $request->room_id)
-            ->get();
+            ->orderBy('id');
+
+        // Inventaris per ruangan bisa dipaginasi saat jumlah aset mulai besar.
+        if ($this->wantsPagination($request)) {
+            return response()->json($query->paginate($this->perPage($request)));
+        }
+
+        $assets = $query->get();
 
         return response()->json($assets);
     }

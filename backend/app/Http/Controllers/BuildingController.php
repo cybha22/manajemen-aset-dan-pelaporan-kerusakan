@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Building;
-use App\Models\Room;
-use App\Models\Category;
-use App\Models\Technician;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class BuildingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Mode pagination dipakai halaman admin; default tetap array untuk dropdown publik.
+        if ($this->wantsPagination($request)) {
+            $data = Building::query()
+                ->orderBy('name')
+                ->paginate($this->perPage($request));
+
+            return response()->json($data);
+        }
+
         $data = Cache::remember('public:buildings:list', now()->addMinutes(30), function () {
             return Building::query()
                 ->orderBy('name')

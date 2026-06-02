@@ -45,6 +45,28 @@
             </tbody>
           </table>
         </div>
+        <div v-if="roomPagination.total > 0" class="tickets-pagination master-pagination">
+          <div class="pagination-info">
+            <strong>{{ roomPagination.from || 0 }}-{{ roomPagination.to || 0 }}</strong>
+            <span>dari {{ roomPagination.total }} ruangan</span>
+          </div>
+          <div class="pagination-actions">
+            <button type="button" class="page-btn page-btn-wide" :disabled="roomPagination.current_page <= 1" @click="changeRoomPage(roomPagination.current_page - 1)">
+              <i class="ph ph-caret-left"></i>
+              Sebelumnya
+            </button>
+            <button v-for="page in visibleRoomPages" :key="page" type="button" class="page-btn page-number" :class="{ active: page === roomPagination.current_page }" @click="changeRoomPage(page)">
+              {{ page }}
+            </button>
+            <button type="button" class="page-btn page-btn-wide" :disabled="roomPagination.current_page >= roomPagination.last_page" @click="changeRoomPage(roomPagination.current_page + 1)">
+              Berikutnya
+              <i class="ph ph-caret-right"></i>
+            </button>
+          </div>
+          <div class="pagination-page">
+            Halaman {{ roomPagination.current_page }} dari {{ roomPagination.last_page }}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -112,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import api from '../services/api.js'
 import { useToast } from '../composables/useToast.js'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -122,6 +144,15 @@ const confirmRef = ref(null)
 const rooms = ref([])
 const buildings = ref([])
 const allCategories = ref([])
+// State paginator ruangan mengikuti format paginator Laravel.
+const roomPagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 15,
+  total: 0,
+  from: 0,
+  to: 0,
+})
 const modalVisible = ref(false)
 const isEdit = ref(false)
 const activeTab = ref('info')
@@ -130,6 +161,15 @@ const roomForm = reactive({ id: '', building_id: '', room_number: '' })
 const newAsset = reactive({ category_id: '', quantity: 1, condition: 'Baik' })
 
 const condColors = { 'Baik': '#00FF7F', 'Rusak Ringan': '#FFD700', 'Rusak Berat': '#FF6347' }
+// Nomor halaman dibatasi agar kontrol pagination tetap ringkas.
+const visibleRoomPages = computed(() => {
+  const current = roomPagination.value.current_page
+  const last = roomPagination.value.last_page
+  const start = Math.max(1, current - 2)
+  const end = Math.min(last, current + 2)
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index)
+})
+
 function condColor(c) { return condColors[c] || '#fff' }
 
 function roomCode(r) {
@@ -159,12 +199,33 @@ function catBadgeStyle(c) {
   return 'display:inline-block;padding:2px 8px;border-radius:20px;background:' + (catColors[key] || 'rgba(255,255,255,.08)') + ';color:' + (catTextColors[key] || '#fff') + ';font-size:.75rem;margin:2px 2px 2px 0;white-space:nowrap'
 }
 
-async function loadData() {
+async function loadData(page = roomPagination.value.current_page) {
   try {
-    const [bR, rR] = await Promise.all([api.get('/api/buildings'), api.get('/api/rooms')])
+    // Hanya daftar ruangan admin yang meminta pagination; data gedung tetap array untuk dropdown.
+    const [bR, rR] = await Promise.all([
+      api.get('/api/buildings'),
+      api.get('/api/rooms', { params: { paginated: 1, page, per_page: roomPagination.value.per_page } }),
+    ])
     buildings.value = bR.data
-    rooms.value = rR.data
+    rooms.value = rR.data.data || rR.data
+    roomPagination.value = {
+      current_page: rR.data.current_page || 1,
+      last_page: rR.data.last_page || 1,
+      per_page: rR.data.per_page || rooms.value.length || 15,
+      total: rR.data.total || rooms.value.length,
+      from: rR.data.from || (rooms.value.length ? 1 : 0),
+      to: rR.data.to || rooms.value.length,
+    }
+    // Jika item terakhir pada halaman ini terhapus, kembali ke halaman sebelumnya.
+    if (rooms.value.length === 0 && roomPagination.value.current_page > 1) {
+      await loadData(roomPagination.value.current_page - 1)
+    }
   } catch (e) {}
+}
+
+function changeRoomPage(page) {
+  if (page < 1 || page > roomPagination.value.last_page || page === roomPagination.value.current_page) return
+  loadData(page)
 }
 
 function openAdd() {
@@ -245,6 +306,13 @@ onMounted(() => { loadData() })
 </script>
 
 <style scoped>
+.master-pagination {
+  border-top: 1px solid rgba(255,255,255,.06);
+  margin-top: 8px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .room-modal-overlay {
   position: fixed;
   inset: 0;

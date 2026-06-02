@@ -15,26 +15,17 @@ class RoomController extends Controller
             $query->where('building_id', $request->building_id);
         }
 
-        $rooms = $query->get()->map(function ($room) {
-            $registeredAssets = $room->assets->map(fn($a) => [
-                'id'          => $a->id,
-                'category_id' => $a->category_id,
-                'name'        => $a->category->name ?? '-',
-                'quantity'    => $a->quantity,
-                'condition'   => $a->condition,
-            ]);
+        $query->orderBy('building_id')->orderBy('room_number');
 
-            $ticketCategories = $room->tickets
-                ->pluck('category')->filter()->unique('id')->values()
-                ->map(fn($c) => ['id' => $c->id, 'name' => $c->name]);
+        // Data ruangan diformat sama baik saat memakai paginator maupun array biasa.
+        if ($this->wantsPagination($request)) {
+            $rooms = $query->paginate($this->perPage($request));
+            $rooms->setCollection($rooms->getCollection()->map(fn(Room $room) => $this->formatRoom($room)));
 
-            return array_merge($room->only(['id', 'building_id', 'room_number']), [
-                'building'         => $room->building,
-                'registered_assets' => $registeredAssets,
-                'categories'       => $ticketCategories,
-                'total_tickets'    => $room->tickets->count(),
-            ]);
-        });
+            return response()->json($rooms);
+        }
+
+        $rooms = $query->get()->map(fn(Room $room) => $this->formatRoom($room));
 
         return response()->json($rooms);
     }
@@ -75,5 +66,28 @@ class RoomController extends Controller
         $room->delete();
 
         return response()->json(['message' => 'Room deleted successfully.']);
+    }
+
+    private function formatRoom(Room $room): array
+    {
+        // Struktur ini dipakai tabel master data agar aset, kategori tiket, dan total laporan tersedia.
+        $registeredAssets = $room->assets->map(fn($asset) => [
+            'id' => $asset->id,
+            'category_id' => $asset->category_id,
+            'name' => $asset->category->name ?? '-',
+            'quantity' => $asset->quantity,
+            'condition' => $asset->condition,
+        ]);
+
+        $ticketCategories = $room->tickets
+            ->pluck('category')->filter()->unique('id')->values()
+            ->map(fn($category) => ['id' => $category->id, 'name' => $category->name]);
+
+        return array_merge($room->only(['id', 'building_id', 'room_number']), [
+            'building' => $room->building,
+            'registered_assets' => $registeredAssets,
+            'categories' => $ticketCategories,
+            'total_tickets' => $room->tickets->count(),
+        ]);
     }
 }

@@ -7,9 +7,16 @@ use Illuminate\Http\Request;
 
 class TechnicianController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Technician::all());
+        $query = Technician::query()->orderBy('name');
+
+        // Dropdown penugasan teknisi tetap menerima array biasa jika pagination tidak diminta.
+        if ($this->wantsPagination($request)) {
+            return response()->json($query->paginate($this->perPage($request)));
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
